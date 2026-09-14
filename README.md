@@ -9,6 +9,7 @@ Two entry points.
 |---|---|---|---|
 | `@fel/core/rules` | Squad validation: `validateSquad`, `isValidXI`, `countByPosition`, the rule constants and the engine's type vocabulary | `FEL_API` | CommonJS |
 | `@fel/core/client` | The transport (`apiFetch` and its 401→refresh→retry), the seventeen service modules, the envelope adapters, the five error maps, the reference/rules/session caches, the fantasy vocabulary in `lib/`, and the reference data types | `FEL_WEBSITE` (and `FEL_APP`, when it is built) | **ESM** |
+| `@fel/core/client/i18n` | The **app-zone dictionary** — 742 flat dotted keys in Arabic and English — plus `translate()`, the non-hook lookup for code outside a component | `FEL_WEBSITE` (and `FEL_APP`, when it is built) | **ESM** |
 
 Deep subpaths are exported too — `@fel/core/client/api/session`, `@fel/core/client/lib/fmt`,
 `@fel/core/client/data/chips`. Three modules under `/client` export a symbol named `hydrated`, so a
@@ -59,13 +60,33 @@ during the consumer's prerender.
 Relative imports inside `src/client` carry explicit `.js` extensions. That is what lets plain `tsc`
 emit ESM that Node can resolve, with no bundler in the path.
 
-### `/client` does not name its own dictionary keys' text
+### The dictionary is half of one, and that is the point
 
-The dictionaries live in `FEL_WEBSITE`, because 430 of their 1,170 keys are marketing copy a phone
-never renders. So each module names the **keys** it emits as a literal union — mostly derived from
-the table that produces them — and `CoreMessageKey` collects all nine sources. The consumer asserts
-those are a subset of its own `Key`; `FEL_WEBSITE/app/types/core-i18n-contract.ts` is that
-assertion, and it names the missing keys in the compile error.
+Step 28b split `FEL_WEBSITE`'s single 1,170-key dictionary. The **742 app-zone keys** live here
+(`@fel/core/client/i18n`); the **430 `marketing.*` keys** stayed in the website, at
+`i18n/marketing.{ar,en}.ts` — landing-page and guide copy a phone never renders, edited weekly, and
+a tagged package would turn every copy tweak into edit → tag → bump. The website re-merges the two
+halves in `i18n/locales/{ar,en}.ts`, where `Key = CoreKey | MarketingKey`.
+
+Parity is typed, not tested: `CORE_AR: Record<CoreKey, string>` makes a missing Arabic translation
+*and* an unknown extra key compile errors. On top of that, each module still names the keys it emits
+as a literal union — mostly derived from the table that produces them — `CoreMessageKey` collects
+all nine sources, and `src/client/i18n/contract.ts` asserts they exist in `CORE_EN`, printing the
+missing ones by name. That assertion used to live in the consumer; it moved here with the strings,
+where it is exact and where the repo that fails it is the repo that can fix it.
+
+**A separate entry point from `@fel/core/client`, deliberately.** That barrel is pulled whole by a
+prerendered page in the website; a type costs nothing there, ~90 KB of strings would.
+
+#### What a new client must supply
+
+The keys are **flat with dots** — `'points.breakdown.goals'` is one property, not three nested
+objects — and values may contain a literal `@` (`privacy@fantasyeg.com`). Under vue-i18n both are
+fatal by default: its resolver splits paths on `.` and would miss every key, and its compiler reads
+`@` as a linked-message marker and throws `Invalid linked format`. `FEL_WEBSITE/i18n/i18n.config.ts`
+overrides `messageResolver` and `messageCompiler` for exactly this. **A React client needs its own
+equivalents** — the flat shape is the contract, not an accident of the port. Interpolation is only
+`{name}` and `{index}`; there is no plural or linked-message syntax anywhere in the values.
 
 ## What is deliberately not here
 
@@ -161,8 +182,9 @@ hand-maintained copies — is what this package was extracted to end.
 
 ## Layout notes
 
-- **CommonJS only, on purpose.** `FEL_API` is CJS; Vite and Metro both consume CJS. An ESM build is
-  additive whenever a consumer needs one, and would be a minor bump — not a breaking change.
+- **Two module formats, one per half.** `dist/rules` is CommonJS for `FEL_API`'s node10 resolution;
+  `dist/client` is ESM, scoped by the `{"type":"module"}` marker `scripts/emit-esm-marker.mjs`
+  writes. Not a style choice — see “Why `/client` is ESM and `/rules` is CommonJS” above.
 - **`rules/package.json` is a stub, not a package.** `FEL_API`'s tsconfig resolves with node10,
   which ignores `exports` maps; that file is how `@fel/core/rules` gets types there.
 - **`src/` ships in the tarball.** `FEL_WEBSITE`'s rule-parity guard reads the TypeScript source of

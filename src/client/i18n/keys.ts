@@ -1,11 +1,12 @@
 /**
  * Every dictionary key `@fel/core/client` can hand to a translator.
  *
- * The package does not own the dictionaries — they live in the consumer, because 37% of them is
- * marketing copy a phone will never render and copy that changes weekly. So the dependency is
- * inverted: each module names the keys it emits as a literal union, and this file collects them.
- * A consumer asserts the relationship in one place; `FEL_WEBSITE/app/types/core-i18n-contract.ts`
- * is that assertion, and it prints the missing keys by name when it fails.
+ * This file predates the dictionary. Until step 28b the strings lived in the consumer, so the
+ * dependency ran backwards: each module named the keys it emits as a literal union, this file
+ * collected them, and the consumer asserted the relationship. The dictionary is here now
+ * (`./en.ts`), and `./contract.ts` makes that assertion against it — but the unions stay, because
+ * they are what types `RuleError.key`, `chipReasonKey`'s return and the rest, and because they keep
+ * the check EXACT: they name what is reachable, where the dictionary names what exists.
  *
  * Most of these unions are DERIVED from the map that produces them (`typeof X[keyof typeof X]`), so
  * adding a row to a table extends the union automatically. `SquadRuleErrorKey` is written out

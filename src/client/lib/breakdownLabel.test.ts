@@ -1,14 +1,20 @@
 import { describe, expect, test } from 'vitest';
 
+import { CORE_AR } from '../i18n/ar.js';
+import { CORE_EN } from '../i18n/en.js';
+
 import { BREAKDOWN_KEYS, breakdownLabelKey } from './breakdownLabel.js';
 import { BREAKDOWN_KINDS, type BreakdownKind } from './scoring.js';
 
 describe('breakdownLabelKey', () => {
-  // That each key EXISTS in both dictionaries is asserted by the consumer, which owns them:
-  // `FEL_WEBSITE/app/types/core-i18n-contract.ts` checks all nine of this package's key sources at
-  // compile time, where the three runtime walks that used to live here covered only three.
-  test.each(BREAKDOWN_KINDS)('%s resolves to a key', (kind) => {
-    expect(breakdownLabelKey(kind), `no label key mapped for breakdown kind "${kind}"`).not.toBeNull();
+  // `contract.ts` proves at compile time that every key here EXISTS in the dictionary. What it
+  // cannot prove is that somebody left a value non-empty, which is the half this walk covers —
+  // restored in step 28b, when the dictionary moved into the package and made it reachable again.
+  test.each(BREAKDOWN_KINDS)('%s resolves to a key both dictionaries answer', (kind) => {
+    const key = breakdownLabelKey(kind);
+    expect(key, `no label key mapped for breakdown kind "${kind}"`).not.toBeNull();
+    expect(CORE_EN[key!], `missing English label for "${kind}"`).toBeTruthy();
+    expect(CORE_AR[key!], `missing Arabic label for "${kind}"`).toBeTruthy();
   });
 
   test('covers every kind, with nothing left over', () => {

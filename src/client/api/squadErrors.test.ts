@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import { CORE_AR } from '../i18n/ar.js';
+import { CORE_EN } from '../i18n/en.js';
 
 import { mapSquadRuleCode, squadRuleMessage } from './squadErrors.js';
 import { TEST_RULES } from './rulesCache.js';
@@ -21,6 +24,16 @@ describe('mapSquadRuleCode', () => {
     // would print a literal `{pos}` / `{club}`. They fall through to the server's own sentence.
     expect(mapSquadRuleCode('COMPOSITION')).toBeNull();
     expect(mapSquadRuleCode('CLUB_CAP')).toBeNull();
+  });
+
+  it('every mapped key exists in BOTH dictionaries, with copy behind it', () => {
+    // Restored in step 28b. `SQUAD_RULE_KEYS` is not exported, so the mapper is the only way in —
+    // which is also why the contract in `i18n/contract.ts` is the stronger of the two checks.
+    for (const code of ['PLAYER_NOT_FOUND', 'DUPLICATE', 'XI_ILLEGAL', 'BUDGET', 'SIZE']) {
+      const key = mapSquadRuleCode(code)!;
+      expect(CORE_EN[key], `EN missing ${key}`).toBeTruthy();
+      expect(CORE_AR[key], `AR missing ${key}`).toBeTruthy();
+    }
   });
 
   it('answers null for an unknown code and for a prototype key', () => {

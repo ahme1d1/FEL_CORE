@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { CORE_AR } from '../i18n/ar.js';
+import { CORE_EN } from '../i18n/en.js';
+
 import { cardStateForReason, chipReasonKey, CHIP_REASON_KEYS } from './chipAvailability.js';
 
 describe('chipReasonKey', () => {
@@ -14,6 +17,15 @@ describe('chipReasonKey', () => {
   it('answers null for a reason this client has not heard of', () => {
     expect(chipReasonKey('SOME_FUTURE_REASON')).toBeNull();
     expect(chipReasonKey(null)).toBeNull();
+  });
+
+  it('every mapped key exists in BOTH dictionaries, with copy behind it', () => {
+    // Restored in step 28b. The compile-time contract proves the keys exist; only a walk catches a
+    // key whose Arabic value was left empty, which renders as a blank refusal on the chip card.
+    for (const key of Object.values(CHIP_REASON_KEYS)) {
+      expect(CORE_EN[key], `EN missing ${key}`).toBeTruthy();
+      expect(CORE_AR[key], `AR missing ${key}`).toBeTruthy();
+    }
   });
 
   it('answers null for a prototype key rather than a function', () => {
