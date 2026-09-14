@@ -19,5 +19,8 @@
     "noFallthroughCasesInSwitch": true,
     "types": []
   },
-  "include": ["src/**/*"]
+  // Narrowed from `src/**/*` when `src/client` arrived (step 28a). The two halves compile as
+  // separate programs: this one stays CommonJS for FEL_API, the client one emits ESM. Keeping
+  // them in one program would force one module format on both.
+  "include": ["src/rules/**/*"]
 }

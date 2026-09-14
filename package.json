@@ -1,7 +1,7 @@
 {
   "name": "@fel/core",
-  "version": "1.0.0",
-  "description": "Shared Fantasy EG rules — one rulebook for the API, the website and the app.",
+  "version": "1.1.0",
+  "description": "Shared Fantasy EG rules \u2014 one rulebook for the API, the website and the app.",
   "license": "UNLICENSED",
   "private": true,
   "engines": {
@@ -10,20 +10,35 @@
   "files": [
     "dist",
     "src",
-    "rules"
+    "rules",
+    "scripts",
+    "tsconfig.json",
+    "tsconfig.build.json",
+    "tsconfig.client.json",
+    "tsconfig.client.build.json"
   ],
   "exports": {
     "./rules": {
       "types": "./dist/rules/index.d.ts",
       "default": "./dist/rules/index.js"
     },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    },
+    "./client/*": {
+      "types": "./dist/client/*.d.ts",
+      "default": "./dist/client/*.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "npm run build:rules && npm run build:client",
+    "build:rules": "tsc -p tsconfig.build.json",
+    "build:client": "tsc -p tsconfig.client.build.json && node scripts/emit-esm-marker.mjs",
     "prepare": "npm run build",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

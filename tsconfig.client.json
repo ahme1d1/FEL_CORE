@@ -1,0 +1,34 @@
+{
+  // The CLIENT half: `src/client/**`, emitted as ESM.
+  //
+  // Separate from `tsconfig.json` because the two halves ship different module formats — the rules
+  // half stays CommonJS for FEL_API's node10 resolution, this half must be ESM so that
+  // `referenceCache`'s `export let MARKET`/`CLUBS` survive as LIVE bindings. Measured: through a
+  // CJS build, a Node-ESM consumer sees `MARKET` stay `[]` for ever after hydration while the
+  // module's own read sees the data — a silent, total failure of the reference cache.
+  //
+  // Strictness is a deliberate copy of FEL_WEBSITE's own settings, so a file moved verbatim
+  // compiles verbatim and nothing passes here that `nuxt typecheck` would reject there.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ES2022",
+    // `node` (node10), not `bundler`/`node16`: it is the only setting that lets plain `tsc` emit
+    // runnable ESM without a source-tree `package.json` game. Relative imports carry explicit `.js`
+    // extensions — TypeScript substitutes `.ts` at compile time and emits the specifier unchanged,
+    // which is what Node's ESM loader needs. node10's package-resolution weaknesses cost nothing
+    // here: the client half has zero package imports.
+    "moduleResolution": "node",
+    "outDir": "dist",
+    // Deliberately NO "DOM" — see src/client/platform/globals.d.ts for why, and for the two
+    // globals this half actually uses.
+    "lib": ["ES2022"],
+    "types": [],
+    "strict": true,
+    // Not part of `strict`, and off to match FEL_WEBSITE (nuxt.config.ts sets it false explicitly
+    // BECAUSE this layer was written before Nuxt 4 defaulted it on).
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true
+  },
+  "include": ["src/client/**/*"]
+}
