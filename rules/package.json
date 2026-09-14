@@ -1,0 +1,5 @@
+{
+  "//": "Not a package — a subpath stub. FEL_API's tsconfig sets `module: commonjs` with no `moduleResolution`, so tsc resolves with node10, which ignores the `exports` map above it. Without this file `@fel/core/rules` has no types there. Committed, not generated.",
+  "main": "../dist/rules/index.js",
+  "types": "../dist/rules/index.d.ts"
+}
