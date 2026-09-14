@@ -26,14 +26,32 @@ tag an acceptable trade for hand-copied logic.
 
 ```jsonc
 // package.json
-"@fel/core": "git+https://github.com/ahme1d1/FEL_CORE.git#v1.0.0"
+"@fel/core": "github:ahme1d1/FEL_CORE#v1.0.0"
 ```
 
-Pin a tag, always. Use the explicit `git+https://` form rather than the `github:` shorthand — the
-shorthand makes npm write a `git+ssh://` URL into `package-lock.json`, and CI has no ssh key.
+**This is never published to npm.** There is no registry in the path: npm fetches it straight from
+GitHub. `private: true` is set so `npm publish` refuses. Releasing a version is a git tag — see
+[Changing a rule](#changing-a-rule).
+
+**Pin a tag, always**, and never move or delete a tag that a consumer's lockfile references — that
+lockfile records the commit the tag pointed at, and a `npm ci` that cannot find it fails the build.
+Cut a new tag instead.
 
 `prepare` compiles the package on install, so consumers get JS + `.d.ts` and Metro never has to
 transpile TypeScript out of `node_modules`.
+
+### ⚠️ Any build image needs `git`
+
+npm **always clones** a git dependency. There is no codeload-tarball path — not with `prepare`, not
+without it, not for a public repo. Measured twice in `node:24.18.0-alpine`, which ships no git: both
+installs died on `enoent … git`. `FEL_API`'s Dockerfile adds `apk add --no-cache git` to its two
+`npm ci` stages, and **any future Expo/EAS build will need the same**. An install also needs network
+access to `github.com`, not just to the npm registry.
+
+No credentials are needed, though, and that is the point of the repo being public. npm normalises the
+dependency spec to the `github:` shorthand and writes a `git+ssh://…` URL into `package-lock.json`
+even if you write `git+https://` — but for a public repo it falls back ssh → https on its own, so
+`npm ci` works with no ssh key and no token. Verified in a keyless container.
 
 ## Changing a rule
 
