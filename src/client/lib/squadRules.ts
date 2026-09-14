@@ -42,8 +42,17 @@ export type SquadRuleErrorKey =
   | 'rules.squadFull'
   | 'errors.actionFailed';
 
-export interface RuleError {
-  key: SquadRuleErrorKey;
+/**
+ * Generic over the key so a CALLER can format its own message with the same interpolation.
+ *
+ * `validateSquad`/`canPick` only ever produce `SquadRuleErrorKey`, which is the default — but
+ * `formatRuleError` is a pure `{key, args}` formatter, and `stores/transfers.ts` reuses it for
+ * `transfers.error.incomplete`, a fact about the basket rather than a rule about squads. Widening
+ * `SquadRuleErrorKey` to admit that key would have been a lie about what the validator emits; the
+ * compiler caught the difference the moment the union replaced a blanket `Key`.
+ */
+export interface RuleError<K extends string = SquadRuleErrorKey> {
+  key: K;
   args?: Record<string, string | number>;
 }
 
@@ -223,9 +232,9 @@ export function canPick(
  * Translate a RuleError into a user-facing string using a translator and the
  * error's args. The translator should be `useT()` from LanguageContext.
  */
-export function formatRuleError(
-  err: RuleError,
-  translate: (key: SquadRuleErrorKey) => string
+export function formatRuleError<K extends string = SquadRuleErrorKey>(
+  err: RuleError<K>,
+  translate: (key: K) => string
 ): string {
   let out = translate(err.key);
   if (err.args) {

@@ -3,11 +3,69 @@
 Shared Fantasy EG code, so a rule has one definition across three clients: `FEL_API` (NestJS),
 `FEL_WEBSITE` (Nuxt) and `FEL_APP` (Expo).
 
-Today it ships one entry point.
+Two entry points.
 
-| Entry point | Holds | Consumed by |
-|---|---|---|
-| `@fel/core/rules` | Squad validation: `validateSquad`, `isValidXI`, `countByPosition`, the rule constants and the engine's type vocabulary | `FEL_API` |
+| Entry point | Holds | Consumed by | Format |
+|---|---|---|---|
+| `@fel/core/rules` | Squad validation: `validateSquad`, `isValidXI`, `countByPosition`, the rule constants and the engine's type vocabulary | `FEL_API` | CommonJS |
+| `@fel/core/client` | The transport (`apiFetch` and its 401→refresh→retry), the seventeen service modules, the envelope adapters, the five error maps, the reference/rules/session caches, the fantasy vocabulary in `lib/`, and the reference data types | `FEL_WEBSITE` (and `FEL_APP`, when it is built) | **ESM** |
+
+Deep subpaths are exported too — `@fel/core/client/api/session`, `@fel/core/client/lib/fmt`,
+`@fel/core/client/data/chips`. Three modules under `/client` export a symbol named `hydrated`, so a
+single flat barrel cannot hold everything; most consumers import the subpath.
+
+### `/client` needs a host, and says so
+
+The client half carries **no framework and no browser**. Three things are injected:
+
+```ts
+import { installReactivity, configureApiClient } from '@fel/core/client';
+
+installReactivity(vueReactivity);     // or a React/useSyncExternalStore adapter, or `plainReactivity`
+configureApiClient({
+  apiBase, fetcher, storage, getLang, // `fetcher` must be ofetch-shaped — see below
+  onExternalStorageChange,            // optional: web has tabs, a phone does not
+});
+```
+
+`installReactivity` is separate from `configureApiClient` because it is needed at first **read**,
+while everything else is needed at first **call**. Reading a value with no adapter installed
+**throws**, rather than returning something that renders once and never updates.
+
+`fetcher` must **reject** on a non-2xx with `status` and the parsed `data` — ofetch's contract.
+`apiFetch`'s 401→refresh→retry reads exactly those two fields, so a bare `fetch()` (which resolves
+on 4xx and carries neither) would turn every API error into a network failure and silently disable
+the refresh flow.
+
+### Why `/client` is ESM and `/rules` is CommonJS
+
+`referenceCache` exports `let MARKET` / `let CLUBS` and reassigns them on hydration, relying on ES
+live bindings. **Node's CJS→ESM interop copies named exports once, at evaluation** — so through a
+CommonJS build a consumer holds `[]` for ever while the module's own reads see the data. Measured
+twice, before and after the extraction. `FEL_WEBSITE` prerenders `pages/contact.vue`, which pulls
+the whole services barrel through Nitro's Node loader, so this is the live production path and not a
+hypothetical.
+
+Dual CJS+ESM output was rejected: these modules hold **singleton state**, so two copies in one
+process means a signed-in manager on one and a signed-out one on the other. Every `/client` consumer
+resolves `import` anyway.
+
+`dist/client/package.json` is a generated `{"type":"module"}` marker — Node picks a file's format
+from the nearest `package.json`, so that one file scopes ESM to the client subtree and leaves
+`dist/rules` CommonJS for `FEL_API`. It is written by `scripts/emit-esm-marker.mjs` on every build;
+`tsc` cannot emit it, and without it Node throws *Cannot use import statement outside a module*
+during the consumer's prerender.
+
+Relative imports inside `src/client` carry explicit `.js` extensions. That is what lets plain `tsc`
+emit ESM that Node can resolve, with no bundler in the path.
+
+### `/client` does not name its own dictionary keys' text
+
+The dictionaries live in `FEL_WEBSITE`, because 430 of their 1,170 keys are marketing copy a phone
+never renders. So each module names the **keys** it emits as a literal union — mostly derived from
+the table that produces them — and `CoreMessageKey` collects all nine sources. The consumer asserts
+those are a subset of its own `Key`; `FEL_WEBSITE/app/types/core-i18n-contract.ts` is that
+assertion, and it names the missing keys in the compile error.
 
 ## What is deliberately not here
 
@@ -40,6 +98,22 @@ Cut a new tag instead.
 `prepare` compiles the package on install, so consumers get JS + `.d.ts` and Metro never has to
 transpile TypeScript out of `node_modules`.
 
+### ⚠️ `--ignore-scripts` suppresses the build
+
+`prepare` is the only thing that compiles this package — `dist/` is gitignored, so a clone carries
+none. `npm ci --ignore-scripts` therefore installs it **unbuilt**, and `npm rebuild` does not run
+`prepare`. A consumer that needs `--ignore-scripts` for its own reasons must build it explicitly:
+
+```dockerfile
+RUN npm ci --ignore-scripts && npm --prefix node_modules/@fel/core run build
+```
+
+That works because the package ships its tsconfigs and `scripts/` in `files`, and because npm puts
+the consumer's own `node_modules/.bin` on PATH for a `--prefix` run — so it compiles with the
+consumer's `typescript`. Invoke the package's own `build` script rather than copying its `tsc` lines
+into a Dockerfile, or the two will drift. `FEL_WEBSITE`'s Dockerfile does this and then asserts
+`dist/client/index.js` and the ESM marker both exist.
+
 ### ⚠️ Any build image needs `git`
 
 npm **always clones** a git dependency. There is no codeload-tarball path — not with `prepare`, not
@@ -52,6 +126,14 @@ No credentials are needed, though, and that is the point of the repo being publi
 dependency spec to the `github:` shorthand and writes a `git+ssh://…` URL into `package-lock.json`
 even if you write `git+https://` — but for a public repo it falls back ssh → https on its own, so
 `npm ci` works with no ssh key and no token. Verified in a keyless container.
+
+## Changing the client half
+
+Same release loop as a rule: edit, test, tag, bump consumers. The friction is deliberate for rules,
+and it is the real cost here — a service or a lib function changes far more often than a rule does.
+Develop against a local checkout (`npm i ../FEL_CORE`, which symlinks; keep `tsc -w` running, since
+npm does **not** run `prepare` for a `file:` dependency) and pin the tag as the last commit.
+`FEL_WEBSITE/tests/unit/core-pin.test.ts` fails if a `file:` spec is ever committed.
 
 ## Changing a rule
 
