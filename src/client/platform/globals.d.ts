@@ -23,3 +23,6 @@ declare class URL {
   constructor(url: string, base?: string);
   toString(): string;
 }
+
+/** Used by `squadSwap.test.ts` to deep-copy a fixture. Universal since Node 17 / all target browsers. */
+declare function structuredClone<T>(value: T): T;

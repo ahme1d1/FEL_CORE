@@ -56,25 +56,46 @@ export interface ReactivityAdapter {
   derive<T>(compute: () => T): HostDerived<T>;
 }
 
-let adapter: ReactivityAdapter | null = null;
+/**
+ * The adapter slot lives on `globalThis`, not in module scope, because it is process-scoped HOST
+ * configuration rather than per-module state.
+ *
+ * The case that forces it: three suites call `vi.resetModules()` and re-import `session`/`rulesCache`
+ * to exercise their COLD paths. That hands them a fresh copy of this module too — and a
+ * module-scoped slot would be empty, so every cell touch would throw even though the host is
+ * perfectly well installed. The cells themselves are deliberately NOT global: a suite asking for a
+ * cold module must get cold state, which is the whole point of resetting.
+ *
+ * The double-install guard therefore keys on the adapter's NAME rather than its identity — after a
+ * module reset the same adapter is a different object, and refusing that would be refusing nothing
+ * real. Two different hosts in one process is what it is there to catch.
+ */
+const SLOT = Symbol.for('@fel/core/client:reactivity');
+type Slot = { [SLOT]?: ReactivityAdapter | null };
+
+function slot(): Slot {
+  return globalThis as unknown as Slot;
+}
 
 export function installReactivity(next: ReactivityAdapter): void {
-  if (adapter && adapter !== next) {
+  const current = slot()[SLOT];
+  if (current && current.name !== next.name) {
     throw new Error(
-      `@fel/core/client: reactivity already installed by "${adapter.name}"; refusing "${next.name}". ` +
+      `@fel/core/client: reactivity already installed by "${current.name}"; refusing "${next.name}". ` +
         'Two adapters means two copies of the session, reference and rules state — a signed-in ' +
         'manager on one and a signed-out one on the other.',
     );
   }
-  adapter = next;
+  slot()[SLOT] = next;
 }
 
 /** Test seam. */
 export function __resetReactivityForTests(): void {
-  adapter = null;
+  slot()[SLOT] = null;
 }
 
 function host(): ReactivityAdapter {
+  const adapter = slot()[SLOT];
   if (!adapter) {
     throw new Error(
       '@fel/core/client: no reactivity adapter installed. Import the host adapter module before ' +

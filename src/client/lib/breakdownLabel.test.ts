@@ -1,0 +1,36 @@
+import { describe, expect, test } from 'vitest';
+
+import { BREAKDOWN_KEYS, breakdownLabelKey } from './breakdownLabel.js';
+import { BREAKDOWN_KINDS, type BreakdownKind } from './scoring.js';
+
+describe('breakdownLabelKey', () => {
+  // That each key EXISTS in both dictionaries is asserted by the consumer, which owns them:
+  // `FEL_WEBSITE/app/types/core-i18n-contract.ts` checks all nine of this package's key sources at
+  // compile time, where the three runtime walks that used to live here covered only three.
+  test.each(BREAKDOWN_KINDS)('%s resolves to a key', (kind) => {
+    expect(breakdownLabelKey(kind), `no label key mapped for breakdown kind "${kind}"`).not.toBeNull();
+  });
+
+  test('covers every kind, with nothing left over', () => {
+    expect(Object.keys(BREAKDOWN_KEYS).sort()).toEqual([...BREAKDOWN_KINDS].sort());
+  });
+
+  /**
+   * The regression. `rows` comes from FEL_API, which owns `BreakdownKind` and shipped `defcon`
+   * without the website knowing — so the cast here is not a test contrivance, it is the real
+   * shape of the wire. The old code passed this straight to `t(undefined)`, and production showed
+   * the row with no label at all: a bare `1` and `2` above the total. Returning `null` lets the
+   * caller fall back to the raw kind instead.
+   */
+  test('answers null for a kind this build has never heard of, rather than throwing', () => {
+    const fromAFutureServer = 'someRuleWeHaveNotShippedYet' as BreakdownKind;
+    expect(() => breakdownLabelKey(fromAFutureServer)).not.toThrow();
+    expect(breakdownLabelKey(fromAFutureServer)).toBeNull();
+  });
+
+  test('is not fooled by a name Object.prototype happens to own', () => {
+    // `BREAKDOWN_KEYS['constructor']` is a function, not a key — a bare `[kind]` lookup with no
+    // `?? null` would hand `t()` something even less printable than undefined.
+    expect(breakdownLabelKey('constructor' as BreakdownKind)).toBeNull();
+  });
+});
