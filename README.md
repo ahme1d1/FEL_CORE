@@ -114,6 +114,21 @@ consumer's `typescript`. Invoke the package's own `build` script rather than cop
 into a Dockerfile, or the two will drift. `FEL_WEBSITE`'s Dockerfile does this and then asserts
 `dist/client/index.js` and the ESM marker both exist.
 
+### ⚠️ npm 11 warns that `prepare` is unapproved — today it still runs
+
+`npm install` prints `allow-scripts   @fel/core@x.y.z (prepare: npm run build)`. As of npm **11.16**
+that is a warning only: the script runs and `dist/` is produced. If a later npm makes the gate
+enforcing, a plain `npm ci` will install this package **unbuilt** and every consumer import will fail
+to resolve.
+
+Not pre-approved on purpose. `npm approve-scripts @fel/core` writes
+`"allowScripts": { "github:ahme1d1/FEL_CORE#<commit-sha>": true }` — keyed by the **commit**, so it
+would have to be re-run on every tag bump, and a stale entry is silently useless. One command fixes
+it on the day it matters; carrying the maintenance until then does not.
+
+`FEL_WEBSITE`'s Dockerfile is already immune: it builds the package explicitly rather than relying
+on `prepare`.
+
 ### ⚠️ Any build image needs `git`
 
 npm **always clones** a git dependency. There is no codeload-tarball path — not with `prepare`, not
