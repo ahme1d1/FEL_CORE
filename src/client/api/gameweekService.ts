@@ -38,7 +38,28 @@ export interface GWSnapshot {
   points: number;
   captain: number;
   totalPoints: number;
+  /**
+   * Rank WITHIN this gameweek, not the manager's standing — the two are separate
+   * columns on the server (`ManagerGameweekScore.rank` / `.overallRank`) and this route
+   * published only the first. FEL_WEBSITE's profile screen read it under the heading
+   * "Overall rank", so a manager sitting 40,000th who had a good week saw a number in
+   * the hundreds.
+   *
+   * `0` is the server's "not ranked yet" sentinel here, kept for contract compatibility
+   * — ranks are 1-based, so it is never a real position. Test it with `> 0`, never
+   * `!= null`; the latter is what printed «Overall rank · 0».
+   */
   rank: number;
+  /**
+   * Cumulative standing after this gameweek — `ManagerGameweekScore.overallRank`.
+   *
+   * OPTIONAL on purpose, and in both directions. An API release that predates the field
+   * simply omits it, so a website deployed first must fall back rather than assume; and
+   * the server omits it for a settled row still awaiting its rank pass, rather than
+   * sending the `0` that misled the field above. Absent means "no standing", which is
+   * not a standing of zero.
+   */
+  overallRank?: number;
   ts: number;
 }
 
