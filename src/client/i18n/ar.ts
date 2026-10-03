@@ -544,8 +544,8 @@ export const CORE_AR: Record<CoreKey, string> = {
   'leagues.hub.section.h2h': 'دوريات المواجهات',
   'leagues.hub.row.overall': 'الترتيب العام',
   'leagues.hub.col.league': 'الدوري',
-  'leagues.hub.col.currentRank': 'الترتيب الحالي',
-  'leagues.hub.col.lastRank': 'الترتيب السابق',
+  'leagues.hub.col.currentRank': 'الحالي',
+  'leagues.hub.col.lastRank': 'السابق',
   'leagues.hub.leaveAria': 'غادر {name}',
 
   // ── gameweek dev controls (TweaksPanel) ──────────────────────
