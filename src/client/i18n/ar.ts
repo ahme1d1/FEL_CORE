@@ -827,8 +827,7 @@ export const CORE_AR: Record<CoreKey, string> = {
   'prices.title': 'تغيّرات الأسعار',
   'prices.risers': 'صاعدون',
   'prices.fallers': 'هابطون',
-  'prices.info':
-    'أسعار اللاعبين تتغيّر كل ليلة حسب صافي الشراء والبيع. اضغط ♥ لمتابعة لاعب.',
+  'prices.info': 'أسعار اللاعبين تتغيّر كل ليلة حسب صافي الشراء والبيع.',
   'prices.empty.title': 'مفيش تغييرات أسعار',
   'prices.empty.bodyRisers': 'مفيش أسعار لاعبين زادت في آخر ٢٤ ساعة.',
   'prices.empty.bodyFallers': 'مفيش أسعار لاعبين قلّت في آخر ٢٤ ساعة.',

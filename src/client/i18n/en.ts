@@ -871,8 +871,9 @@ export const CORE_EN = {
   'prices.title': 'Price Changes',
   'prices.risers': 'Risers',
   'prices.fallers': 'Fallers',
-  'prices.info':
-    'Player prices change every night based on net transfers in and out. Tap ♥ to watch a player.',
+  // One sentence: the second told the manager to «Tap ♥ to watch a player», and no screen on the
+  // website or the app has a ♥ to tap (FEL_APP phase 10 §6, the owner's call, 2026-10-03).
+  'prices.info': 'Player prices change every night based on net transfers in and out.',
   'prices.empty.title': 'No price changes',
   'prices.empty.bodyRisers': 'No player prices went up in the last 24 hours.',
   'prices.empty.bodyFallers': 'No player prices went down in the last 24 hours.',
