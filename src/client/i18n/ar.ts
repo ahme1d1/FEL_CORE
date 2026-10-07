@@ -480,7 +480,7 @@ export const CORE_AR: Record<CoreKey, string> = {
   // ── notifications ────────────────────────────────────────────
   'notifications.title': 'الإشعارات',
   'notifications.unreadAria': 'الإشعارات — {n} جديدة',
-  'notifications.markAll': 'قرأ الكل',
+  'notifications.markAll': 'تعليم الكل كمقروء',
   'notifications.empty.title': 'لا توجد إشعارات بعد',
   'notifications.empty.body': 'ستظهر هنا تنبيهات الأهداف والإصابات وتغيرات الأسعار.',
   'notifications.time.now': 'الآن',
