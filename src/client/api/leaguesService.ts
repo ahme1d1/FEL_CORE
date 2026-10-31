@@ -11,6 +11,7 @@ import {
   type GwScoreResult,
 } from './scoringService.js';
 import * as session from './session.js';
+import type { TransferCommit } from './transfersService.js';
 import type { ApiPage, ApiResponse } from './types.js';
 
 export interface LeagueMember {
@@ -406,6 +407,26 @@ export async function getManagerScore(
     const message = e instanceof Error ? e.message : 'Unknown score data from API';
     return { success: false, data: null, error: message };
   }
+}
+
+/** One gameweek's transfers, plus who made them. The bank is not in it: what a rival has left is theirs. */
+export interface ManagerTransfers {
+  gw: number;
+  manager: ManagerIdentity;
+  commits: TransferCommit[];
+}
+
+/**
+ * `GET /managers/:managerId/transfers?gw=` — `getManagerScore`'s twin for a round's moves, in the
+ * same shape as the caller's own `history`. The same privacy rule: `SQUAD_HIDDEN` until that
+ * gameweek's deadline has passed, and `MANAGER_NOT_FOUND` (404) for an id that is unknown, disabled
+ * or a guest.
+ */
+export async function getManagerTransfers(
+  managerId: string,
+  gw: number
+): Promise<ApiResponse<ManagerTransfers>> {
+  return apiFetch<ManagerTransfers>(`/managers/${managerId}/transfers`, { query: { gw } });
 }
 
 // ── Head-to-head ────────────────────────────────────────────────

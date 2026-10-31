@@ -126,6 +126,19 @@ describe('scoringService', () => {
     expect(res).toEqual({ success: true, data: { average: 40, highest: 90 }, error: null });
   });
 
+  it('getGWHighest keeps who the top scorer is, so a page can open their other reads', async () => {
+    configureApiClient({ apiBase: 'https://api.test' });
+    apiFetchMock.mockResolvedValue({
+      success: true,
+      data: { managerId: 'mgr-9', managerName: 'X', teamName: 'Y', chip: null, score: SCORE_DTO },
+      error: null,
+    });
+
+    const res = await getGWHighest(5);
+
+    expect(res.success && res.data?.managerId).toBe('mgr-9');
+  });
+
   it('getGWHighest maps the nested score alongside managerName/teamName/chip', async () => {
     configureApiClient({ apiBase: 'https://api.test' });
     apiFetchMock.mockResolvedValue({

@@ -373,6 +373,8 @@ export async function getLiveSquadGWScore(gw: number): Promise<ApiResponse<GwSco
 // ── Gameweek top score ──────────────────────────────────────────
 
 export interface GWHighest {
+  /** Who to read next (their transfers, say). Display names are not unique, so never match this manager by name. */
+  managerId: string;
   managerName: string;
   teamName: string;
   chip: ChipKind | null;
@@ -411,6 +413,7 @@ export async function getGWStats(gw: number): Promise<ApiResponse<GWStats>> {
 }
 
 interface ClientGwHighestDTO {
+  managerId: string;
   managerName: string;
   teamName: string;
   chip: string | null;
@@ -465,6 +468,7 @@ export async function getGWHighest(gw: number): Promise<ApiResponse<GWHighest>> 
       return { success: false, data: null, error: 'Highest scorer has no team for this gameweek.' };
     }
     return ok({
+      managerId: res.data.managerId,
       managerName: res.data.managerName,
       teamName: res.data.teamName,
       chip: toChipOrNull(res.data.chip),

@@ -23,6 +23,7 @@ import {
   getH2HState,
   getManagerScore,
   getManagerSquad,
+  getManagerTransfers,
   getMemberScore,
   getMemberSquad,
   isSquadNotEntered,
@@ -427,6 +428,39 @@ describe('the league-independent manager reads', () => {
     overallRank: 400,
     isSettled: true,
   };
+
+  it('getManagerTransfers reads /managers/:id/transfers for the round named', async () => {
+    configureApiClient({ apiBase: 'https://api.test' });
+    const commit = {
+      ts: 1,
+      gw: 7,
+      swaps: [{ outId: 9, inId: 125, outSellPrice: 10, inPurchasePrice: 8 }],
+      cost: 4,
+      chipUsed: null,
+      freeTransfersBefore: 1,
+      freeTransfersAfter: 0,
+    };
+    apiFetchMock.mockResolvedValue({
+      success: true,
+      data: { gw: 7, manager: { name: 'Omar', teamName: 'Maadi' }, commits: [commit] },
+      error: null,
+    });
+
+    const res = await getManagerTransfers('mgr-9', 7);
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/managers/mgr-9/transfers', { query: { gw: 7 } });
+    expect(res.data).toEqual({ gw: 7, manager: { name: 'Omar', teamName: 'Maadi' }, commits: [commit] });
+  });
+
+  it('getManagerTransfers hands a refusal back with its code', async () => {
+    configureApiClient({ apiBase: 'https://api.test' });
+    apiFetchMock.mockResolvedValue({ success: false, data: null, error: 'Nope', code: 'SQUAD_HIDDEN' });
+
+    const res = await getManagerTransfers('mgr-9', 9);
+
+    expect(res.success).toBe(false);
+    expect(res.code).toBe('SQUAD_HIDDEN');
+  });
 
   it('getManagerScore reads /managers/:id/score and maps the entered arm', async () => {
     configureApiClient({ apiBase: 'https://api.test' });
